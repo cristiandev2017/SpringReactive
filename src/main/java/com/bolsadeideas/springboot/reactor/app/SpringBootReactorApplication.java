@@ -8,6 +8,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import reactor.core.publisher.Flux;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @SpringBootApplication
 public class SpringBootReactorApplication implements CommandLineRunner {
 
@@ -19,13 +22,25 @@ public class SpringBootReactorApplication implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        Flux <Usuario> nombres = Flux.just("Cristian", "Andres","Maria", "Pedro", "Diego")
-                .map(nombre ->  new Usuario(nombre.toUpperCase(), null))
+
+        List <String> usuariosList = new ArrayList <>();
+        usuariosList.add("Cristian Santamaria");
+        usuariosList.add("Andres Guzman");
+        usuariosList.add("Maria Santamaria");
+        usuariosList.add("Pedro Sarmiento");
+        usuariosList.add("Bruce Lee");
+        usuariosList.add("Bruce Wily");
+
+        Flux <String> nombres = Flux.fromIterable(usuariosList);
+
+
+                nombres.map(nombre ->  new Usuario(nombre.split(" ")[0].toUpperCase(), nombre.split(" ")[1].toUpperCase()))
+                .filter(usuario -> usuario.getNombre().equalsIgnoreCase("bruce"))
                 .doOnNext(usuario ->{
                     if (usuario == null){
                         throw new RuntimeException("Los nombres no pueden estar pelados");
                     }
-                      System.out.println(usuario.getNombre());
+                      System.out.println(usuario.getNombre().concat(" ").concat(usuario.getApellido()));
                 }).map(usuario -> {
                     String nombre = usuario.getNombre().toLowerCase();
                     usuario.setNombre(nombre);
@@ -33,7 +48,7 @@ public class SpringBootReactorApplication implements CommandLineRunner {
                 });
 
 
-        nombres.subscribe(e -> log.info(e.getNombre()),
+        nombres.subscribe(e -> log.info(e.toString()),
                 error -> log.error(error.getMessage()),
                 new Runnable() {
                     @Override

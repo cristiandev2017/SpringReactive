@@ -25,7 +25,8 @@ public class SpringBootReactorApplication implements CommandLineRunner {
     public void run(String... args) throws Exception {
        // ejemploIterable();
        // ejemploFlatmap();
-        ejemplotoString();
+       //ejemplotoString();
+       ejemplotoCollectList();
     }
 
 
@@ -67,7 +68,7 @@ public class SpringBootReactorApplication implements CommandLineRunner {
         );
     }
 
-    public void ejemploFlatmap() throws Exception {
+    public void ejemploFlatmap() {
 
         List <String> usuariosList = new ArrayList <>();
         usuariosList.add("Cristian Santamaria");
@@ -95,7 +96,7 @@ public class SpringBootReactorApplication implements CommandLineRunner {
         );
     }
 
-    public void ejemplotoString() throws Exception {
+    public void ejemplotoString() {
 
         List <Usuario> usuariosList = new ArrayList <>();
         usuariosList.add(new Usuario( "Cristian" ,"Santamaria"));
@@ -117,6 +118,23 @@ public class SpringBootReactorApplication implements CommandLineRunner {
                 .map(String::toLowerCase)
                 .subscribe(u ->log.info(u.toString())
                 );
+    }
+
+    public void ejemplotoCollectList(){
+
+        List <Usuario> usuariosList = new ArrayList <>();
+        usuariosList.add(new Usuario("Cristian", "Santamaria"));
+        usuariosList.add(new Usuario("Andres", "Guzman"));
+        usuariosList.add(new Usuario("Maria", "Santamaria"));
+        usuariosList.add(new Usuario("Pedro", "Sarmiento"));
+        usuariosList.add(new Usuario("Bruce", "Lee"));
+        usuariosList.add(new Usuario("Bruce", "Wily"));
+
+        Flux.fromIterable(usuariosList)
+                .collectList()
+                .subscribe(lista ->
+                        lista.forEach(usuario -> log.info(usuario.toString()))
+                        );
     }
 }
 

@@ -14,6 +14,8 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
 
 @SpringBootApplication
@@ -36,7 +38,8 @@ public class SpringBootReactorApplication implements CommandLineRunner {
         //ejemploZipWithRangos();
         //ejemploInterval();
         //ejemploDelayElements();
-        ejemploDelayIntervalInfinito();
+        //ejemploDelayIntervalInfinito();
+        ejemploDelayIntervalDesdeCreate();
     }
 
 
@@ -183,7 +186,7 @@ public class SpringBootReactorApplication implements CommandLineRunner {
         });
 
 
-        Mono<UsuarioComentarios> usuarioComentariosMono= usuarioMono.zipWith(comentariosMono,(usuario,comentariosUsuario)-> new UsuarioComentarios(usuario,comentariosUsuario));
+        Mono <UsuarioComentarios> usuarioComentariosMono = usuarioMono.zipWith(comentariosMono, (usuario, comentariosUsuario) -> new UsuarioComentarios(usuario, comentariosUsuario));
         usuarioComentariosMono.subscribe(usuarioComentarios -> log.info(usuarioComentarios.toString()));
     }
 
@@ -199,37 +202,37 @@ public class SpringBootReactorApplication implements CommandLineRunner {
         });
 
 
-        Mono<UsuarioComentarios> usuarioComentariosMono= usuarioMono.zipWith(comentariosMono)
-                        .map(tupleData -> {
-                            Usuario usuario = tupleData.getT1();
-                            Comentarios comentario = tupleData.getT2();
-                            return new UsuarioComentarios(usuario, comentario);
-                        });
+        Mono <UsuarioComentarios> usuarioComentariosMono = usuarioMono.zipWith(comentariosMono)
+                .map(tupleData -> {
+                    Usuario usuario = tupleData.getT1();
+                    Comentarios comentario = tupleData.getT2();
+                    return new UsuarioComentarios(usuario, comentario);
+                });
 
         usuarioComentariosMono.subscribe(usuarioComentarios -> log.info(usuarioComentarios.toString()));
     }
 
     public void ejemploZipWithRangos() {
 
-        Flux.just(1,2,3,4)
-                .map(numero -> (numero*2))
-                .zipWith(Flux.range(0,4),(uno, dos) -> String.format("Primer Flux: %d, Segundo Flux: %d", uno, dos))
+        Flux.just(1, 2, 3, 4)
+                .map(numero -> (numero * 2))
+                .zipWith(Flux.range(0, 4), (uno, dos) -> String.format("Primer Flux: %d, Segundo Flux: %d", uno, dos))
                 .subscribe(texto -> log.info(texto));
     }
 
-    public void ejemploInterval(){
+    public void ejemploInterval() {
 
-        Flux<Integer> rango = Flux.range(1,12);
-        Flux<Long> retraso = Flux.interval(Duration.ofSeconds(1));
+        Flux <Integer> rango = Flux.range(1, 12);
+        Flux <Long> retraso = Flux.interval(Duration.ofSeconds(1));
 
-        rango.zipWith(retraso, (rang,ret)->rang)
+        rango.zipWith(retraso, (rang, ret) -> rang)
                 .doOnNext(numero -> log.info(numero.toString()))
                 .blockLast();
     }
 
-    public void ejemploDelayElements(){
+    public void ejemploDelayElements() {
 
-        Flux<Integer> rango = Flux.range(1,12)
+        Flux <Integer> rango = Flux.range(1, 12)
                 .delayElements(Duration.ofSeconds(1))
                 .doOnNext(numero -> log.info(numero.toString()));
 
@@ -242,19 +245,43 @@ public class SpringBootReactorApplication implements CommandLineRunner {
 
         Flux.interval(Duration.ofSeconds(1))
                 .doOnTerminate(latch::countDown)
-                .flatMap(valor ->{
-                    if (valor >= 5){
+                .flatMap(valor -> {
+                    if (valor >= 5) {
                         return Flux.error(new InterruptedException("Solo, hasta 5 parcerito"));
                     }
                     return Flux.just(valor);
                 })
-                .map(valor -> "Hola " +valor)
+                .map(valor -> "Hola " + valor)
                 .retry(2)
-                .subscribe(texto -> log.info(texto),e -> log.error(e.getMessage()));
+                .subscribe(texto -> log.info(texto), e -> log.error(e.getMessage()));
 
         latch.await();
     }
 
+    public void ejemploDelayIntervalDesdeCreate() {
+        Flux.create(emitter -> {
+                    Timer timer = new Timer();
+                    timer.schedule(new TimerTask() {
+                        private Integer contador = 0;
 
+                        @Override
+                        public void run() {
+                            emitter.next(++contador);
+                            if (contador == 10){
+                                timer.cancel();
+                                emitter.complete();
+                            }
+
+                            if (contador == 5){
+                                timer.cancel();
+                                emitter.error(new InterruptedException("Parcero esto se jodio en el 5"));
+                            }
+                        }
+                    }, 1000, 1000);
+                })
+                .subscribe(next -> log.info(next.toString()),
+                        error -> log.error(error.getMessage()),
+                        () -> log.info("Hemos terminado parcerito"));
+    }
 }
 

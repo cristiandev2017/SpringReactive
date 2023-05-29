@@ -11,8 +11,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 @SpringBootApplication
 public class SpringBootReactorApplication implements CommandLineRunner {
@@ -31,7 +33,10 @@ public class SpringBootReactorApplication implements CommandLineRunner {
         //ejemplotoCollectList();
         //ejemploUsuarioComentariosFlatMap();
         //ejemploUsuarioComentariosZipWith();
-        ejemploZipWithRangos();
+        //ejemploZipWithRangos();
+        //ejemploInterval();
+        //ejemploDelayElements();
+        ejemploDelayIntervalInfinito();
     }
 
 
@@ -210,6 +215,44 @@ public class SpringBootReactorApplication implements CommandLineRunner {
                 .map(numero -> (numero*2))
                 .zipWith(Flux.range(0,4),(uno, dos) -> String.format("Primer Flux: %d, Segundo Flux: %d", uno, dos))
                 .subscribe(texto -> log.info(texto));
+    }
+
+    public void ejemploInterval(){
+
+        Flux<Integer> rango = Flux.range(1,12);
+        Flux<Long> retraso = Flux.interval(Duration.ofSeconds(1));
+
+        rango.zipWith(retraso, (rang,ret)->rang)
+                .doOnNext(numero -> log.info(numero.toString()))
+                .blockLast();
+    }
+
+    public void ejemploDelayElements(){
+
+        Flux<Integer> rango = Flux.range(1,12)
+                .delayElements(Duration.ofSeconds(1))
+                .doOnNext(numero -> log.info(numero.toString()));
+
+        rango.blockLast();
+    }
+
+    public void ejemploDelayIntervalInfinito() throws InterruptedException {
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        Flux.interval(Duration.ofSeconds(1))
+                .doOnTerminate(latch::countDown)
+                .flatMap(valor ->{
+                    if (valor >= 5){
+                        return Flux.error(new InterruptedException("Solo, hasta 5 parcerito"));
+                    }
+                    return Flux.just(valor);
+                })
+                .map(valor -> "Hola " +valor)
+                .retry(2)
+                .subscribe(texto -> log.info(texto),e -> log.error(e.getMessage()));
+
+        latch.await();
     }
 
 

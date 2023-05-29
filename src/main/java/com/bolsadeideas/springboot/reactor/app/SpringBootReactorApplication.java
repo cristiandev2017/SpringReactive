@@ -29,7 +29,9 @@ public class SpringBootReactorApplication implements CommandLineRunner {
         // ejemploFlatmap();
         //ejemplotoString();
         //ejemplotoCollectList();
-        ejemploUsuarioComentariosFlatMap();
+        //ejemploUsuarioComentariosFlatMap();
+        //ejemploUsuarioComentariosZipWith();
+        ejemploZipWithRangos();
     }
 
 
@@ -163,5 +165,53 @@ public class SpringBootReactorApplication implements CommandLineRunner {
                         comentarios -> new UsuarioComentarios(usuario, comentarios))
         ).subscribe(usuarioComentarios -> log.info(usuarioComentarios.toString()));
     }
+
+    public void ejemploUsuarioComentariosZipWith() {
+        Mono <Usuario> usuarioMono = Mono.fromCallable(() -> new Usuario("Jhon", "Wick"));
+
+        Mono <Comentarios> comentariosMono = Mono.fromCallable(() -> {
+            Comentarios comentarios = new Comentarios();
+            comentarios.addComentario("Hola pepe, que tal?");
+            comentarios.addComentario("Por fin terminare el curso");
+            comentarios.addComentario("Con toda muchachos");
+            return comentarios;
+        });
+
+
+        Mono<UsuarioComentarios> usuarioComentariosMono= usuarioMono.zipWith(comentariosMono,(usuario,comentariosUsuario)-> new UsuarioComentarios(usuario,comentariosUsuario));
+        usuarioComentariosMono.subscribe(usuarioComentarios -> log.info(usuarioComentarios.toString()));
+    }
+
+    public void ejemploUsuarioComentariosZipWith2() {
+        Mono <Usuario> usuarioMono = Mono.fromCallable(() -> new Usuario("Jhon", "Wick"));
+
+        Mono <Comentarios> comentariosMono = Mono.fromCallable(() -> {
+            Comentarios comentarios = new Comentarios();
+            comentarios.addComentario("Hola pepe, que tal?");
+            comentarios.addComentario("Por fin terminare el curso");
+            comentarios.addComentario("Con toda muchachos");
+            return comentarios;
+        });
+
+
+        Mono<UsuarioComentarios> usuarioComentariosMono= usuarioMono.zipWith(comentariosMono)
+                        .map(tupleData -> {
+                            Usuario usuario = tupleData.getT1();
+                            Comentarios comentario = tupleData.getT2();
+                            return new UsuarioComentarios(usuario, comentario);
+                        });
+
+        usuarioComentariosMono.subscribe(usuarioComentarios -> log.info(usuarioComentarios.toString()));
+    }
+
+    public void ejemploZipWithRangos() {
+
+        Flux.just(1,2,3,4)
+                .map(numero -> (numero*2))
+                .zipWith(Flux.range(0,4),(uno, dos) -> String.format("Primer Flux: %d, Segundo Flux: %d", uno, dos))
+                .subscribe(texto -> log.info(texto));
+    }
+
+
 }
 
